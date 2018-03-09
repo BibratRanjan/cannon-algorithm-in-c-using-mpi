@@ -11,6 +11,7 @@ int main(int argc,char *argv[])
    MPI_Init(NULL,NULL);
    MPI_Comm_size(MPI_COMM_WORLD,&size);
    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+   // To get number of rows and columns
    if(rank==0)
    {
     fp=fopen("A.txt","r");
@@ -20,11 +21,13 @@ int main(int argc,char *argv[])
       if(ch=='\n'){ row=row+1; }
       count++;
     }
+      
     column=count/row; 
     if(count!=size) { printf("No of Proc must be equal to %d\nCode terminated",count); exit(0); }
     fseek( fp, 0, SEEK_SET );
     A=(float*)calloc(sizeof(float),row*column);
     B=(float*)calloc(sizeof(float),row*column);
+      
     k=0;
     printf("A matrix:\n");
     for(i=0;i<row;i++) 
@@ -38,7 +41,9 @@ int main(int argc,char *argv[])
        } 
        printf("\n"); 
     }
+      
     fclose(fp);
+      
     k=0;
     printf("\nB matrix:\n");
     fp=fopen("B.txt","r");
@@ -55,11 +60,15 @@ int main(int argc,char *argv[])
     } 
     fclose(fp);
    }
+   
    MPI_Bcast(&row,1,MPI_INT,0,MPI_COMM_WORLD);
+   
    int periods[]={1,1}; //both vertical and horizontal movement; 
    int dims[]={row,row};
    int coords[2]; /* 2 Dimension topology so 2 coordinates */
    int right=0, left=0, down=0, up=0;    // neighbor ranks
+   
+   // the basic assumption is that each element gets one process
    MPI_Comm cart_comm;
    MPI_Cart_create(MPI_COMM_WORLD,2,dims,periods,1,&cart_comm );
    MPI_Scatter(A,1,MPI_FLOAT,&a,1,MPI_FLOAT,0,cart_comm);
@@ -81,6 +90,7 @@ int main(int argc,char *argv[])
    }
    C=(float*)calloc(sizeof(float),row*row);
    MPI_Gather(&c,1,MPI_FLOAT,C,1,MPI_FLOAT,0,cart_comm);
+   
    if(rank==0)
    {
       k=0; 
